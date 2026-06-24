@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>동적 평형 시뮬레이션 — 증발과 응축</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#0c1320;
+    --bg-soft:#121d31;
+    --panel:#16223a;
+    --panel-line:#26344f;
+    --ink:#eaf1fb;
+    --ink-dim:#9fb0cc;
+    --ink-faint:#64748b;
+    --liquid:#2dd4bf;       /* 액체 물 분자 */
+    --gas:#7cc4ff;          /* 기체 수증기 분자 */
+    --evap:#fb9f4b;         /* 증발 속도(정반응) */
+    --cond:#5fa8ff;         /* 응축 속도(역반응) */
+    --eq:#4ade80;           /* 평형 */
+    --glass:#cfe6ff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -10%, #1a2c49 0%, transparent 55%),
+      radial-gradient(900px 600px at 0% 110%, #15243d 0%, transparent 50%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 48px;}
+
+  header{margin-bottom:22px;}
+  .eyebrow{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;margin:0 0 8px;
+  }
+  h1{
+    font-size:clamp(24px,3.4vw,34px);line-height:1.12;margin:0;font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  h1 .accent{color:var(--liquid);}
+  .lede{margin:10px 0 0;color:var(--ink-dim);font-size:15px;max-width:62ch;line-height:1.6;}
+
+  .stage{
+    display:grid;grid-template-columns:minmax(0,440px) 1fr;gap:20px;margin-top:24px;
+  }
+  @media (max-width:860px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:linear-gradient(180deg,var(--panel) 0%, var(--bg-soft) 100%);
+    border:1px solid var(--panel-line);
+    border-radius:18px;
+    padding:18px;
+  }
+  .flask-card{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  #flask{width:100%;max-width:400px;height:auto;display:block;}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-size:13px;color:var(--ink-dim);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;}
+  .dot.liquid{background:var(--liquid);}
+  .dot.gas{background:var(--gas);}
+
+  .side{display:flex;flex-direction:column;gap:16px;}
+
+  .status{
+    display:flex;align-items:center;gap:12px;justify-content:space-between;
+    padding:14px 16px;border-radius:14px;border:1px solid var(--panel-line);
+    background:var(--bg-soft);transition:border-color .4s, background .4s;
+  }
+  .status.eq{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.08);}
+  .status-label{font-size:13px;color:var(--ink-dim);}
+  .badge{
+    font-size:13px;font-weight:700;padding:6px 13px;border-radius:999px;
+    background:rgba(124,196,255,.14);color:var(--gas);border:1px solid rgba(124,196,255,.3);
+    transition:all .4s;white-space:nowrap;
+  }
+  .status.eq .badge{background:rgba(74,222,128,.18);color:var(--eq);border-color:rgba(74,222,128,.5);}
+
+  .counts{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .count-box{padding:14px 16px;border-radius:14px;background:var(--bg-soft);border:1px solid var(--panel-line);}
+  .count-box .k{font-size:12px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;}
+  .count-box .v{font-size:30px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}
+  .count-box.liq .v{color:var(--liquid);}
+  .count-box.gas .v{color:var(--gas);}
+
+  .rates{display:flex;flex-direction:column;gap:13px;}
+  .rate-row .top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:6px;}
+  .rate-row .name{font-weight:600;}
+  .rate-row .name small{color:var(--ink-faint);font-weight:500;margin-left:5px;}
+  .rate-row .val{font-variant-numeric:tabular-nums;color:var(--ink-dim);font-size:12px;}
+  .bar{height:9px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;}
+  .bar > i{display:block;height:100%;width:0%;border-radius:6px;transition:width .15s linear;}
+  .bar.evap > i{background:var(--evap);}
+  .bar.cond > i{background:var(--cond);}
+
+  .graph-card .ghead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .graph-card h2{font-size:14px;margin:0;font-weight:700;letter-spacing:.01em;}
+  .glegend{display:flex;gap:14px;font-size:12px;color:var(--ink-dim);}
+  .glegend span{display:inline-flex;align-items:center;gap:6px;}
+  .line{width:16px;height:3px;border-radius:2px;display:inline-block;}
+  .line.evap{background:var(--evap);}
+  .line.cond{background:var(--cond);}
+  #graph{width:100%;height:auto;display:block;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  button{
+    font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    border-radius:11px;border:1px solid var(--panel-line);padding:10px 18px;
+    background:var(--panel);color:var(--ink);transition:all .15s;
+  }
+  button:hover{border-color:#3a4f73;background:#1b2942;}
+  button.primary{background:var(--liquid);color:#06231f;border-color:transparent;}
+  button.primary:hover{filter:brightness(1.08);}
+  button:focus-visible{outline:2px solid var(--gas);outline-offset:2px;}
+  .temp{flex:1;min-width:200px;display:flex;align-items:center;gap:12px;}
+  .temp label{font-size:13px;color:var(--ink-dim);white-space:nowrap;}
+  .temp output{font-size:13px;color:var(--evap);font-weight:700;font-variant-numeric:tabular-nums;min-width:46px;text-align:right;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,var(--cond),var(--evap));outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:#fff;border:3px solid var(--evap);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--evap);cursor:pointer;
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--gas);outline-offset:3px;}
+
+  .note{
+    margin-top:8px;font-size:13px;line-height:1.65;color:var(--ink-dim);
+    border-left:2px solid var(--panel-line);padding-left:14px;
+  }
+  .note b{color:var(--ink);font-weight:600;}
+  .note .eqtext{color:var(--eq);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">화학 · 물질과 에너지 · 동적 평형</p>
+    <h1>밀폐 용기 속 물의 <span class="accent">동적 평형</span></h1>
+    <p class="lede">밀폐된 플라스크 안에서 물 분자가 끊임없이 증발하고 응축합니다. 증발 속도(정반응)는 일정하지만 기체 분자가 쌓일수록 응축 속도(역반응)가 빨라지고, 두 속도가 같아지는 순간 <b>동적 평형</b>에 도달합니다. 평형에 도달해도 분자 운동은 멈추지 않습니다.</p>
+  </header>
+
+  <div class="stage">
+    <!-- 미시세계: 플라스크 -->
+    <div class="card flask-card">
+      <canvas id="flask" width="400" height="460"></canvas>
+      <div class="legend">
+        <span><i class="dot liquid"></i> 액체 물 분자</span>
+        <span><i class="dot gas"></i> 기체 수증기 분자</span>
+      </div>
+    </div>
+
+    <!-- 거시세계: 데이터 -->
+    <div class="side">
+      <div class="status" id="status">
+        <span class="status-label">평형 상태</span>
+        <span class="badge" id="badge">평형 도달 전</span>
+      </div>
+
+      <div class="counts">
+        <div class="count-box liq">
+          <div class="k"><span class="dot liquid"></span>액체 분자 수</div>
+          <div class="v" id="liqCount">0</div>
+        </div>
+        <div class="count-box gas">
+          <div class="k"><span class="dot gas"></span>기체 분자 수</div>
+          <div class="v" id="gasCount">0</div>
+        </div>
+      </div>
+
+      <div class="card rates">
+        <div class="rate-row">
+          <div class="top">
+            <span class="name" style="color:var(--evap)">증발 속도 <small>정반응 (액체→기체)</small></span>
+            <span class="val" id="evapVal">0 분자/초</span>
+          </div>
+          <div class="bar evap"><i id="evapBar"></i></div>
+        </div>
+        <div class="rate-row">
+          <div class="top">
+            <span class="name" style="color:var(--cond)">응축 속도 <small>역반응 (기체→액체)</small></span>
+            <span class="val" id="condVal">0 분자/초</span>
+          </div>
+          <div class="bar cond"><i id="condBar"></i></div>
+        </div>
+      </div>
+
+      <div class="card graph-card">
+        <div class="ghead">
+          <h2>시간에 따른 반응 속도 <span style="color:var(--ink-faint);font-weight:500;font-size:12px;">· 몰 단위 거시 변화</span></h2>
+          <div class="glegend">
+            <span><i class="line evap"></i>증발</span>
+            <span><i class="line cond"></i>응축</span>
+          </div>
+        </div>
+        <canvas id="graph" width="560" height="240"></canvas>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--ink-faint);line-height:1.55;">플라스크 속 분자는 수가 적어 통계적으로 출렁이지만, 실제 물질은 분자가 매우 많아(몰 단위) 속도가 매끄럽게 변합니다. 이 그래프는 그 거시적 변화 양상을 나타냅니다.</p>
+      </div>
+
+      <div class="controls card">
+        <button class="primary" id="playBtn">일시정지</button>
+        <button id="resetBtn">초기화</button>
+        <div class="temp">
+          <label for="temp">온도</label>
+          <input type="range" id="temp" min="0" max="100" value="50">
+          <output id="tempOut">보통</output>
+        </div>
+      </div>
+
+      <p class="note" id="note">
+        기체 분자가 거의 없는 처음에는 <b>응축이 일어날 수 없어</b> 응축 속도가 0입니다. 증발이 진행될수록 기체 분자가 늘어 충돌·응축이 잦아지고, 마침내 두 속도가 같아집니다.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- 캔버스 & DPI ----------
+  const flask = document.getElementById('flask');
+  const fctx = flask.getContext('2d');
+  const graph = document.getElementById('graph');
+  const gctx = graph.getContext('2d');
+
+  function fitCanvas(canvas, ctx){
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || canvas.width;
+    const ratio = canvas.height / canvas.width;
+    const h = w * ratio;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w, h };
+  }
+
+  // 논리 좌표(CSS px) 기준 플라스크 형상
+  const FW = 400, FH = 460;
+  const cx = FW/2, cy = 268, R = 150;        // 둥근 본체(bulb)
+  const surfaceY0 = cy + 46;                  // 초기(전부 액체) 표면 높이
+  let surfaceY = surfaceY0;                   // 현재 표면 높이 — 액체 분자 수에 따라 변함
+  const neckTop = 70, neckHalf = 34;          // 목 부분
+
+  // 원 안에서 표면 높이 y 아래(액체)의 면적. s는 중심 기준 오프셋(s=y-cy)
+  function segArea(s){ return R*R*(Math.PI/2) - s*Math.sqrt(R*R - s*s) - R*R*Math.asin(Math.max(-1,Math.min(1,s/R))); }
+  const AREA_FULL = segArea(surfaceY0 - cy);  // 모든 분자가 액체일 때의 면적
+  // 액체 분자 수에 비례하는 면적이 되도록 목표 표면 높이를 역산(밀도 일정 유지)
+  function targetSurfaceY(liqCount){
+    const At = AREA_FULL * (liqCount / N);
+    let lo = -R, hi = R;                       // segArea는 s에 대해 단조 감소
+    for(let k=0;k<26;k++){ const mid=(lo+hi)/2; if(segArea(mid) > At) lo=mid; else hi=mid; }
+    return cy + (lo+hi)/2;
+  }
+
+  // ---------- 분자 ----------
+  const N = 220;
+  const MR = 3.4;                              // 분자 반지름(O)
+  let molecules = [];
+
+  function randInLiquid(){
+    // 액체 영역: 원 안 + surfaceY 아래
+    for(let i=0;i<200;i++){
+      const x = cx + (Math.random()*2-1)*(R-6);
+      const y = surfaceY + Math.random()*(cy+R-6 - surfaceY);
+      if((x-cx)**2 + (y-cy)**2 <= (R-6)**2) return {x,y};
+    }
+    return {x:cx, y:(surfaceY+cy+R)/2};
+  }
+
+  function init(){
+    molecules = [];
+    for(let i=0;i<N;i++){
+      const p = randInLiquid();
+      molecules.push({ x:p.x, y:p.y, vx:(Math.random()*2-1)*0.7, vy:(Math.random()*2-1)*0.7, phase:'liquid',
+                       angle:Math.random()*Math.PI*2, spin:(Math.random()*2-1)*0.05 });
+    }
+    nGas = 0;
+    evapAcc = 0;
+    history = [];
+    surfaceY = surfaceY0;
+    frame = 0; tHold = 0; equilibrium = false; eqMarkFrac = null;
+    updateStatus();
+  }
+
+  // ---------- 물리 / 속도 파라미터 ----------
+  let tempNorm = 0.5;
+  function evapPerFrame(){ return 0.30 * (0.4 + tempNorm*1.6); }     // 온도↑ → 증발↑
+  function gasSpeed(){ return 2.4 * (0.9 + tempNorm*0.4); }          // 온도 영향 약함
+
+  // ---------- 속도 측정 ----------
+  // ── 그래프·속도 표시값: 거시(몰 단위) 반응 속도론 모형 ──
+  // 물리 엔진(분자 운동/증발/응축)은 그대로 두고, 화면에 표시하는 "반응 속도"는
+  // 유한한 분자 수의 표본 잡음이 없는 실제 물질량(몰 단위) 기준 값으로 따로 계산한다.
+  //   증발 속도(정반응) = k_e            (일정, 온도로 결정)
+  //   응축 속도(역반응) = k_c · n        (기체 물질량 n 에 비례)
+  //   dn/dt = k_e − k_c·n                (→ n 은 매끄러운 지수 접근, 평형에서 일정)
+  // 상수는 시뮬레이션과 맞춰 둠: k_e=증발률, 평형 기체량 n_eq=k_e/k_c 가 분자 시뮬레이션과 일치.
+  const FPS = 60;
+  const KC = 0.24;                   // 응축 속도 상수(1/s) — 시뮬레이션 평형 기체량에 맞춤
+  let nGas = 0;                      // 거시 모형의 기체 물질량(상대 단위)
+  function keMacro(){ return evapPerFrame()*FPS; }   // 증발 속도 상수 = 시뮬레이션 증발률
+  let evapAcc = 0;
+
+  // 그래프 기록
+  let history = [];     // {e, c}
+  const HIST_MAX = 320;
+
+  // 상태
+  let frame = 0, tHold = 0, equilibrium = false, eqMarkFrac = null;
+  let running = true;
+
+  // ---------- 한 스텝 ----------
+  function step(){
+    let evapThis = 0, condThis = 0;
+    const gs = gasSpeed();
+    let liqCount = 0; for(const m of molecules) if(m.phase==='liquid') liqCount++;
+
+    // 표면 높이: 액체 분자 수에 비례하는 면적이 되도록 목표값으로 부드럽게 이동
+    surfaceY += (targetSurfaceY(liqCount) - surfaceY) * 0.06;
+
+    // 증발: 노출된 표면 폭(2D 표면적, ∝ √(R²−s²))에 비례 → 수위가 낮아지면 증발도 감소(안정화)
+    const sOff = surfaceY - cy;
+    const areaFactor = Math.sqrt(Math.max(0, R*R - sOff*sOff)) / Math.sqrt(R*R - (surfaceY0-cy)*(surfaceY0-cy));
+    evapAcc += evapPerFrame() * areaFactor;
+    while(evapAcc >= 1 && liqCount > 30){
+      evapAcc -= 1;
+      // 표면 띠 안의 액체 분자 후보(가장 위)
+      let best = -1, bestY = Infinity;
+      // 무작위 탐색으로 표면에 가까운 분자 선택
+      for(let t=0;t<24;t++){
+        const idx = (Math.random()*molecules.length)|0;
+        const m = molecules[idx];
+        if(m.phase==='liquid' && m.y < bestY){ best = idx; bestY = m.y; }
+      }
+      if(best>=0){
+        const m = molecules[best];
+        m.phase = 'gas';
+        m.y = surfaceY - 2;
+        const ang = -Math.PI/2 + (Math.random()*2-1)*0.9;  // 위쪽으로 발사
+        m.vx = Math.cos(ang)*gs;
+        m.vy = Math.sin(ang)*gs;
+        m.spin = (Math.random()*2-1)*0.13;   // 자유로운 기체: 빠른 회전
+        evapThis++;
+        liqCount--;
+      } else break;
+    }
+
+    // 분자 이동
+    for(const m of molecules){
+      m.angle += m.spin;                     // 매 프레임 360도 회전(tumbling)
+      if(m.phase==='gas'){
+        // 등속 직선 운동 (충돌 사이) — 속력 보정 없음(에너지 보존)
+        m.x += m.vx; m.y += m.vy;
+
+        // 응축: 액체 표면 아래로 내려오면 응축
+        if(m.y >= surfaceY){
+          m.phase = 'liquid';
+          // 들어온 위치에서 액체에 합류하여 살짝 가라앉음
+          m.y = surfaceY + 2 + Math.random()*4;
+          const maxx = Math.sqrt(Math.max(0,(R-6)**2 - (m.y-cy)**2));
+          if(Math.abs(m.x-cx) > maxx) m.x = cx + Math.sign(m.x-cx)*maxx;
+          m.vx = (Math.random()*2-1)*0.5;
+          m.vy = 0.4 + Math.random()*0.35;
+          m.spin = (Math.random()*2-1)*0.045;  // 갇힌 액체: 느린 회전
+          condThis++;
+          continue;
+        }
+        // 본체(원) 벽 반사 — 표면 위 영역
+        const dx = m.x-cx, dy = m.y-cy, d = Math.hypot(dx,dy);
+        const lim = R - MR;
+        if(d > lim){
+          const nx = dx/d, ny = dy/d;
+          const dot = m.vx*nx + m.vy*ny;
+          m.vx -= 2*dot*nx; m.vy -= 2*dot*ny;
+          m.x = cx + nx*lim; m.y = cy + ny*lim;
+          if(m.y >= surfaceY){ // 반사 후 표면 아래면 위로
+            m.y = surfaceY - 2; m.vy = -Math.abs(m.vy);
+          }
+        }
+      } else {
+        // 액체: 등속 운동 + 경계 탄성 반사 (속력 보존, 에너지 보존)
+        m.x += m.vx; m.y += m.vy;
+
+        // 표면(위쪽 경계) 탄성 반사
+        if(m.y < surfaceY + 1){ m.y = surfaceY + 1; m.vy = Math.abs(m.vy); }
+        // 둥근 벽(아래쪽) 탄성 반사
+        const dx = m.x-cx, dy = m.y-cy, d = Math.hypot(dx,dy), lim = R-4;
+        if(d > lim){
+          const nx = dx/d, ny = dy/d, dot = m.vx*nx + m.vy*ny;
+          m.vx -= 2*dot*nx; m.vy -= 2*dot*ny;
+          m.x = cx + nx*lim; m.y = cy + ny*lim;
+        }
+      }
+    }
+
+    // 같은 상(기체·액체)끼리 완전 탄성 충돌
+    resolveCollisions();
+
+    // 거시(몰 단위) 모형 적분 — 표시용. 물리 엔진과 분리되어 매끄러운 변화를 보인다.
+    nGas += (keMacro() - KC*nGas) * (1/FPS);
+
+    frame++;
+  }
+
+  // 동일 질량 2D 완전 탄성 충돌 (운동량·운동에너지 보존)
+  const COLL_R = 4.2;                 // 충돌 반지름 (분자 외형 기준)
+  const COLL_D = COLL_R*2, COLL_D2 = COLL_D*COLL_D;
+  function resolveCollisions(){
+    const gas = [], liq = [];
+    for(const m of molecules){ (m.phase==='gas' ? gas : liq).push(m); }
+    collidePairs(gas, 'gas');
+    collidePairs(liq, 'liquid');
+  }
+  function collidePairs(arr, phase){
+    const n = arr.length;
+    for(let i=0;i<n;i++){
+      const a = arr[i];
+      for(let j=i+1;j<n;j++){
+        const b = arr[j];
+        const dx = b.x-a.x, dy = b.y-a.y;
+        const d2 = dx*dx + dy*dy;
+        if(d2 >= COLL_D2 || d2 === 0) continue;
+        const d = Math.sqrt(d2);
+        const nx = dx/d, ny = dy/d;
+        // 법선 방향 상대속도
+        const vrel = (a.vx-b.vx)*nx + (a.vy-b.vy)*ny;
+        if(vrel > 0){               // 서로 다가올 때만 충돌
+          // 동일 질량 → 법선 성분 교환 (KE·운동량 보존)
+          a.vx -= vrel*nx; a.vy -= vrel*ny;
+          b.vx += vrel*nx; b.vy += vrel*ny;
+        }
+        // 겹침 분리 (위치만 보정 — 에너지 불변)
+        const overlap = (COLL_D - d) * 0.5;
+        a.x -= nx*overlap; a.y -= ny*overlap;
+        b.x += nx*overlap; b.y += ny*overlap;
+        clampMol(a, phase); clampMol(b, phase);
+      }
+    }
+  }
+  // 충돌 분리로 경계를 벗어난 분자를 영역 안으로 되돌림
+  function clampMol(m, phase){
+    const dx = m.x-cx, dy = m.y-cy, d = Math.hypot(dx,dy);
+    if(phase === 'gas'){
+      if(m.y > surfaceY-2) m.y = surfaceY-2;
+      const lim = R-MR; if(d > lim){ m.x = cx + dx/d*lim; m.y = cy + dy/d*lim; }
+    } else {
+      if(m.y < surfaceY+1) m.y = surfaceY+1;
+      const lim = R-4;   if(d > lim){ m.x = cx + dx/d*lim; m.y = cy + dy/d*lim; }
+    }
+  }
+
+  // ---------- 평형 판정 ----------
+  function checkEquilibrium(eRate, cRate){
+    if(eRate < 1) return;
+    const rel = Math.abs(eRate - cRate)/eRate;
+    if(cRate > eRate*0.55 && rel < 0.13){
+      tHold++;
+      if(tHold > 50 && !equilibrium){
+        equilibrium = true;
+        eqMarkFrac = history.length;   // 기록상 위치 표시
+        updateStatus();
+      }
+    } else {
+      if(!equilibrium) tHold = Math.max(0, tHold-2);
+    }
+  }
+
+  // ---------- 그리기: 플라스크 ----------
+  function drawFlask(){
+    const {w} = fitCanvas(flask, fctx);
+    const s = w / FW;                 // 스케일
+    fctx.save();
+    fctx.scale(s, s);
+    fctx.clearRect(0,0,FW,FH);
+
+    // 유리 내부(본체 원) 채움 — 미세한 빛
+    fctx.save();
+    fctx.beginPath();
+    fctx.arc(cx, cy, R, 0, Math.PI*2);
+    fctx.clip();
+
+    const gg = fctx.createLinearGradient(0, cy-R, 0, cy+R);
+    gg.addColorStop(0, 'rgba(120,170,230,0.05)');
+    gg.addColorStop(1, 'rgba(80,120,180,0.12)');
+    fctx.fillStyle = gg;
+    fctx.fillRect(cx-R, cy-R, R*2, R*2);
+
+    // 액체 영역(표면 아래) 색
+    fctx.fillStyle = 'rgba(45,212,191,0.10)';
+    fctx.fillRect(cx-R, surfaceY, R*2, (cy+R)-surfaceY);
+    // 표면선
+    fctx.beginPath();
+    fctx.moveTo(cx-R, surfaceY); fctx.lineTo(cx+R, surfaceY);
+    fctx.strokeStyle = 'rgba(45,212,191,0.55)';
+    fctx.lineWidth = 1.4; fctx.stroke();
+
+    // 분자 (원 내부로 클립된 상태)
+    for(const m of molecules){ drawMolecule(m.x, m.y, m.phase, m.angle); }
+    fctx.restore();
+
+    // 목(neck) — 본체 위로
+    fctx.beginPath();
+    fctx.moveTo(cx-neckHalf, neckTop);
+    fctx.lineTo(cx-neckHalf, cy - Math.sqrt(Math.max(0,R*R-neckHalf*neckHalf)) + 6);
+    fctx.moveTo(cx+neckHalf, neckTop);
+    fctx.lineTo(cx+neckHalf, cy - Math.sqrt(Math.max(0,R*R-neckHalf*neckHalf)) + 6);
+    fctx.strokeStyle = 'rgba(207,230,255,0.55)';
+    fctx.lineWidth = 2.2; fctx.lineCap='round';
+    fctx.stroke();
+
+    // 본체 외곽선
+    fctx.beginPath();
+    fctx.arc(cx, cy, R, 0, Math.PI*2);
+    fctx.strokeStyle = 'rgba(207,230,255,0.55)';
+    fctx.lineWidth = 2.2;
+    fctx.stroke();
+
+    // 유리 하이라이트
+    fctx.beginPath();
+    fctx.arc(cx, cy, R-6, Math.PI*0.95, Math.PI*1.28);
+    fctx.strokeStyle = 'rgba(255,255,255,0.20)';
+    fctx.lineWidth = 4; fctx.lineCap='round';
+    fctx.stroke();
+
+    // 마개(밀폐)
+    fctx.fillStyle = '#3a4a66';
+    roundRect(fctx, cx-neckHalf-4, neckTop-18, (neckHalf+4)*2, 24, 6);
+    fctx.fill();
+    fctx.fillStyle = '#4a5d80';
+    roundRect(fctx, cx-neckHalf-10, neckTop-24, (neckHalf+10)*2, 12, 5);
+    fctx.fill();
+
+    fctx.restore();
+  }
+
+  function drawMolecule(x, y, phase, angle){
+    const oCol = phase==='gas' ? '#7cc4ff' : '#2dd4bf';
+    const hCol = phase==='gas' ? 'rgba(190,225,255,0.9)' : 'rgba(190,255,240,0.85)';
+    if(phase==='gas'){
+      fctx.beginPath();
+      fctx.arc(x, y, MR+3, 0, Math.PI*2);
+      fctx.fillStyle = 'rgba(124,196,255,0.12)';
+      fctx.fill();
+    }
+    // 산소
+    fctx.beginPath();
+    fctx.arc(x, y, MR, 0, Math.PI*2);
+    fctx.fillStyle = oCol; fctx.fill();
+    // 수소 2개 (굽은 구조) — 분자 전체가 angle만큼 회전
+    const hr = MR*0.55, bond = MR*1.25;
+    for(const a of [-0.92, 0.92]){
+      const hx = x + Math.cos(angle + a)*bond;
+      const hy = y + Math.sin(angle + a)*bond;
+      fctx.beginPath();
+      fctx.arc(hx, hy, hr, 0, Math.PI*2);
+      fctx.fillStyle = hCol; fctx.fill();
+    }
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  // ---------- 그리기: 그래프 ----------
+  function drawGraph(){
+    const {w,h} = fitCanvas(graph, gctx);
+    gctx.clearRect(0,0,w,h);
+    const padL=10, padR=10, padT=14, padB=22;
+    const gw = w-padL-padR, gh = h-padT-padB;
+
+    // y 최대값
+    let ymax = 6;
+    for(const p of history){ ymax = Math.max(ymax, p.e, p.c); }
+    ymax *= 1.18;
+
+    // 격자
+    gctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    gctx.lineWidth = 1;
+    gctx.font = '10px Pretendard, sans-serif';
+    gctx.fillStyle = 'rgba(159,176,204,0.6)';
+    gctx.textAlign='right'; gctx.textBaseline='middle';
+    for(let i=0;i<=4;i++){
+      const yy = padT + gh*(i/4);
+      gctx.beginPath(); gctx.moveTo(padL,yy); gctx.lineTo(w-padR,yy); gctx.stroke();
+      const v = Math.round(ymax*(1-i/4));
+      gctx.fillText(v, padL-2+padL, yy);
+    }
+    // x축 라벨
+    gctx.textAlign='center'; gctx.textBaseline='bottom';
+    gctx.fillText('시간 →', w/2, h-3);
+
+    const n = history.length;
+    if(n < 2){ drawAxisTitles(gctx,padL,padT); return; }
+
+    const xAt = i => padL + gw * (i/(HIST_MAX-1));
+    const yAt = v => padT + gh * (1 - Math.min(v,ymax)/ymax);
+
+    // 평형 도달 지점 + 음영
+    if(equilibrium && eqMarkFrac!=null){
+      const ex = xAt(eqMarkFrac);
+      const grad = gctx.createLinearGradient(ex,0,w-padR,0);
+      grad.addColorStop(0,'rgba(74,222,128,0.0)');
+      grad.addColorStop(1,'rgba(74,222,128,0.10)');
+      gctx.fillStyle = grad;
+      gctx.fillRect(ex, padT, (w-padR)-ex, gh);
+      gctx.strokeStyle='rgba(74,222,128,0.6)';
+      gctx.setLineDash([4,4]); gctx.lineWidth=1.3;
+      gctx.beginPath(); gctx.moveTo(ex,padT); gctx.lineTo(ex,padT+gh); gctx.stroke();
+      gctx.setLineDash([]);
+      gctx.fillStyle='rgba(74,222,128,0.95)';
+      gctx.font='600 11px Pretendard, sans-serif';
+      gctx.textAlign = ex > w*0.6 ? 'right':'left';
+      gctx.textBaseline='top';
+      gctx.fillText('동적 평형', ex + (ex>w*0.6?-6:6), padT+2);
+    }
+
+    // 응축 라인
+    plotLine(history.map(p=>p.c), xAt, yAt, getCss('--cond'));
+    // 증발 라인
+    plotLine(history.map(p=>p.e), xAt, yAt, getCss('--evap'));
+  }
+
+  function plotLine(arr, xAt, yAt, color){
+    gctx.beginPath();
+    for(let i=0;i<arr.length;i++){
+      const x = xAt(i), y = yAt(arr[i]);
+      if(i===0) gctx.moveTo(x,y); else gctx.lineTo(x,y);
+    }
+    gctx.strokeStyle = color; gctx.lineWidth = 2.4;
+    gctx.lineJoin='round'; gctx.lineCap='round';
+    gctx.stroke();
+  }
+  function drawAxisTitles(){}
+  function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ---------- DOM 갱신 ----------
+  const elLiq=document.getElementById('liqCount'), elGas=document.getElementById('gasCount');
+  const elEvapV=document.getElementById('evapVal'), elCondV=document.getElementById('condVal');
+  const elEvapB=document.getElementById('evapBar'), elCondB=document.getElementById('condBar');
+  const elStatus=document.getElementById('status'), elBadge=document.getElementById('badge');
+  const elNote=document.getElementById('note');
+
+  function updateDOM(eRate, cRate){
+    let liq=0, gas=0;
+    for(const m of molecules){ if(m.phase==='gas') gas++; else liq++; }
+    elLiq.textContent = liq;
+    elGas.textContent = gas;
+    elEvapV.textContent = eRate.toFixed(1)+' (상댓값)';
+    elCondV.textContent = cRate.toFixed(1)+' (상댓값)';
+    const scale = Math.max(8, eRate*1.25);
+    elEvapB.style.width = Math.min(100, eRate/scale*100)+'%';
+    elCondB.style.width = Math.min(100, cRate/scale*100)+'%';
+  }
+
+  function updateStatus(){
+    if(equilibrium){
+      elStatus.classList.add('eq');
+      elBadge.textContent = '동적 평형 도달';
+      elNote.innerHTML = '증발 속도 = 응축 속도. <span class="eqtext">동적 평형</span>입니다. 기체·액체 분자 수는 일정하게 유지되지만, 분자들은 여전히 증발과 응축을 <b>같은 속도로 계속</b>하고 있습니다. 겉보기엔 멈춘 듯 보여도 미시세계는 멈추지 않습니다.';
+    } else {
+      elStatus.classList.remove('eq');
+      elBadge.textContent = '평형 도달 전';
+      elNote.innerHTML = '기체 분자가 거의 없는 처음에는 <b>응축이 일어날 수 없어</b> 응축 속도가 0입니다. 증발이 진행될수록 기체 분자가 늘어 충돌·응축이 잦아지고, 마침내 두 속도가 같아집니다.';
+    }
+  }
+
+  // ---------- 루프 ----------
+  function loop(){
+    if(running) step();
+
+    // 표시값: 거시(몰 단위) 모형 — 증발은 일정, 응축은 매끄러운 지수 접근
+    const eRate = keMacro();          // 증발 속도(정반응) = 일정
+    const cRate = KC * nGas;          // 응축 속도(역반응) = k_c·n
+
+    if(running){
+      checkEquilibrium(eRate, cRate);
+      if(frame % 3 === 0){
+        history.push({e:eRate, c:cRate});
+        if(history.length > HIST_MAX) history.shift();
+      }
+    }
+
+    drawFlask();
+    drawGraph();
+    updateDOM(eRate, cRate);
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- 컨트롤 ----------
+  const playBtn=document.getElementById('playBtn');
+  const resetBtn=document.getElementById('resetBtn');
+  const tempSlider=document.getElementById('temp');
+  const tempOut=document.getElementById('tempOut');
+
+  playBtn.addEventListener('click', ()=>{
+    running = !running;
+    playBtn.textContent = running ? '일시정지' : '재생';
+  });
+  resetBtn.addEventListener('click', ()=>{
+    init();
+    running = true; playBtn.textContent='일시정지';
+  });
+  function tempLabel(v){
+    if(v<20) return '낮음'; if(v<40) return '조금 낮음';
+    if(v<=60) return '보통'; if(v<=80) return '조금 높음'; return '높음';
+  }
+  tempSlider.addEventListener('input', ()=>{
+    tempNorm = tempSlider.value/100;
+    tempOut.textContent = tempLabel(+tempSlider.value);
+  });
+  tempOut.textContent = tempLabel(+tempSlider.value);
+
+  window.addEventListener('resize', ()=>{ /* fitCanvas는 매 프레임 호출됨 */ });
+
+  // 시작
+  init();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
