@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>증발과 응축 실험실</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+  chtml: { scale: 1.05 }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+
+<style>
+/* 색 이름표: 갈색 평형 페이지(index.html)와 같은 색을 씀.
+   --liq = 액체 물(청록), --gas = 수증기(주황 갈색) */
+:root{
+  --paper:#f4efe5;
+  --paper-2:#fbf8f1;
+  --ink:#2a241e;
+  --ink-soft:#5f574c;
+  --line:#e0d7c6;
+  --gas:#b3541e;
+  --gas-deep:#8a3d12;
+  --liq:#2e6f7e;
+  --liq-deep:#1f5460;
+  --gold:#c79a3e;
+  --shadow:rgba(60,45,25,.13);
+  --sim-face:#efe9dd;
+  --chip-bg:rgba(255,255,255,.82);
+  --grid:#d8cfbe;
+  --axis-text:#8b8276;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1b1712;
+    --paper-2:#242019;
+    --ink:#ede4d3;
+    --ink-soft:#b3a892;
+    --line:#3a3226;
+    --gas:#e08a4d;
+    --gas-deep:#f0a868;
+    --liq:#5fb9c9;
+    --liq-deep:#7fcdda;
+    --gold:#dcb96c;
+    --shadow:rgba(0,0,0,.45);
+    --sim-face:#e9e2d1;
+    --chip-bg:rgba(20,17,12,.55);
+    --grid:#3a3226;
+    --axis-text:#9a8f7c;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1b1712;
+  --paper-2:#242019;
+  --ink:#ede4d3;
+  --ink-soft:#b3a892;
+  --line:#3a3226;
+  --gas:#e08a4d;
+  --gas-deep:#f0a868;
+  --liq:#5fb9c9;
+  --liq-deep:#7fcdda;
+  --gold:#dcb96c;
+  --shadow:rgba(0,0,0,.45);
+  --sim-face:#e9e2d1;
+  --chip-bg:rgba(20,17,12,.55);
+  --grid:#3a3226;
+  --axis-text:#9a8f7c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Noto Sans KR",system-ui,-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(199,154,62,.07), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(46,111,126,.06), transparent 42%);
+}
+.serif{font-family:"Noto Serif KR",serif;}
+.wrap{max-width:920px;margin:0 auto;padding:0 22px}
+section{padding:54px 0;border-bottom:1px solid var(--line)}
+section:last-child{border-bottom:none}
+header.hero{padding:64px 0 48px;text-align:center;border-bottom:1px solid var(--line);position:relative;overflow:hidden;}
+.kicker{font-size:.82rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gas);font-weight:700;margin-bottom:18px;}
+header.hero h1{font-family:"Noto Serif KR",serif;font-weight:900;font-size:clamp(2rem,6vw,3.4rem);line-height:1.2;letter-spacing:-.01em;text-wrap:balance;}
+.rxn-hero{margin:26px auto 6px;font-size:clamp(1.3rem,4.5vw,2rem);font-weight:700;display:flex;align-items:center;justify-content:center;gap:.5em;flex-wrap:wrap;}
+.tag-gas{color:var(--gas)} .tag-liq{color:var(--liq)}
+.eqarrow{color:var(--ink-soft);font-weight:400}
+.sub{color:var(--ink-soft);max-width:560px;margin:14px auto 0;font-size:1.02rem}
+.topnav{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.topnav a{font-size:.82rem;font-weight:700;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--paper-2);border-radius:999px;padding:6px 14px}
+.topnav a:hover{border-color:var(--ink)}
+.topnav a[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sec-num{display:inline-block;font-family:"Noto Serif KR",serif;font-weight:900;font-size:.95rem;color:var(--gold);letter-spacing:.05em;margin-bottom:6px;}
+h2{font-family:"Noto Serif KR",serif;font-weight:700;font-size:clamp(1.5rem,4vw,2rem);letter-spacing:-.01em;margin-bottom:18px;line-height:1.3;text-wrap:balance;}
+h3{font-weight:700;font-size:1.12rem;margin:26px 0 8px;color:var(--ink)}
+p{margin:0 0 14px;color:var(--ink-soft);max-width:66ch}
+p strong,li strong{color:var(--ink);font-weight:700}
+.lead{font-size:1.08rem;color:var(--ink)}
+ul.clean{list-style:none;margin:8px 0 14px}
+ul.clean li{position:relative;padding-left:22px;margin-bottom:8px;color:var(--ink-soft)}
+ul.clean li::before{content:"";position:absolute;left:2px;top:.7em;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.callout{background:var(--paper-2);border:1px solid var(--line);border-left:4px solid var(--gas);border-radius:12px;padding:18px 22px;margin:22px 0;box-shadow:0 6px 20px -14px var(--shadow);}
+.callout.q{border-left-color:var(--liq)}
+.callout .lbl{font-weight:800;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gas);margin-bottom:6px;display:block}
+.callout.q .lbl{color:var(--liq)}
+.eqbox{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:16px 0;text-align:center;overflow-x:auto;color:var(--ink)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0 10px}
+.legend .chip{display:flex;align-items:center;gap:10px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:8px 16px 8px 8px;font-weight:600;font-size:.95rem;color:var(--ink)}
+.legend .swatch{width:30px;height:30px;border-radius:50%;flex:none}
+.sim{background:var(--paper-2);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 18px 50px -30px var(--shadow);}
+.sim-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:22px}
+@media(max-width:720px){.sim-grid{grid-template-columns:1fr}}
+.canvas-card{position:relative;border-radius:14px;overflow:hidden;background:var(--sim-face);border:1px solid var(--line)}
+#simCanvas{display:block;width:100%;height:auto}
+.state-tag{position:absolute;top:12px;left:12px;background:var(--chip-bg);backdrop-filter:blur(4px);border-radius:8px;padding:5px 11px;font-size:.8rem;font-weight:700;color:var(--ink);border:1px solid var(--line)}
+.count-tag{position:absolute;bottom:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:720px){.count-tag{position:static;padding:0 12px 12px}}
+.count-tag span{background:var(--chip-bg);backdrop-filter:blur(4px);border-radius:8px;padding:4px 10px;font-size:.78rem;font-weight:700;border:1px solid var(--line)}
+.panel{display:flex;flex-direction:column;gap:16px;min-width:0}
+.rxn-eq{font-family:"Noto Serif KR",serif;font-weight:700;font-size:1.25rem;text-align:center;color:var(--ink)}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:.95rem;margin-bottom:6px;color:var(--ink)}
+.ctrl label .val{font-family:"Noto Serif KR",serif;color:var(--gas);font-weight:700;font-variant-numeric:tabular-nums;}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:linear-gradient(90deg,var(--liq),var(--gold),var(--gas));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--paper-2);border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 6px var(--shadow)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--paper-2);border:3px solid var(--ink);cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--liq);outline-offset:3px}
+.range-scale{display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-soft);margin-top:3px}
+.status{border-radius:10px;padding:10px 14px;font-size:.9rem;font-weight:600;line-height:1.55;border:1px solid var(--line);border-left:4px solid var(--gas);background:var(--paper);color:var(--ink)}
+.status.eq{border-left-color:var(--gold)}
+.readouts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ro{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.ro.wide{grid-column:1 / -1}
+.ro .name{font-size:.74rem;color:var(--ink-soft);font-weight:600;letter-spacing:.02em}
+.ro .num{font-family:"Noto Serif KR",serif;font-weight:700;font-size:1.25rem;line-height:1.25;margin-top:2px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ro .num small{font-size:.78rem;font-weight:600;color:var(--ink-soft)}
+.ro.gas .num{color:var(--gas)} .ro.liq .num{color:var(--liq)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+button.btn{font-family:inherit;font-weight:700;font-size:.9rem;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:10px;padding:10px 16px;cursor:pointer;transition:transform .08s ease,opacity .15s}
+button.btn.ghost{background:transparent;color:var(--ink)}
+button.btn:hover{opacity:.88} button.btn:active{transform:translateY(1px)}
+button.btn:focus-visible,button.pill:focus-visible{outline:2px solid var(--liq);outline-offset:2px}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+button.pill{font-family:inherit;font-size:.82rem;font-weight:700;border-radius:999px;cursor:pointer;padding:7px 14px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+button.pill:hover{border-color:var(--ink)}
+.graph-card{margin-top:22px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 16px 8px}
+.graph-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+.graph-head .t{font-weight:700;font-size:.95rem;color:var(--ink)}
+.glegend{display:flex;gap:14px;font-size:.82rem;font-weight:600;flex-wrap:wrap}
+.glegend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.glegend i.dash{background:repeating-linear-gradient(90deg,var(--gold) 0 4px,transparent 4px 7px)}
+#graphCanvas{display:block;width:100%}
+.scale-note{font-size:.88rem}
+.scale-note li{margin-bottom:6px}
+.next-card{display:block;text-decoration:none;color:inherit;background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:18px 22px;box-shadow:0 6px 20px -14px var(--shadow);transition:border-color .15s}
+.next-card:hover{border-color:var(--ink)}
+.next-card .lbl{font-weight:800;font-size:.78rem;letter-spacing:.12em;color:var(--gold);display:block;margin-bottom:4px}
+.next-card .ttl{font-family:"Noto Serif KR",serif;font-weight:700;font-size:1.15rem;color:var(--ink)}
+footer{padding:40px 0 60px;text-align:center;color:var(--ink-soft);font-size:.86rem}
+.eq-mini{font-family:"Noto Serif KR",serif}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  button.btn{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <nav class="topnav" aria-label="실험 목록">
+      <a href="evaporation.html" aria-current="page">① 증발과 응축 (동적 평형)</a>
+      <a href="index.html">② 갈색 평형 (평형 이동)</a>
+    </nav>
+    <div class="kicker">화학 · 가역 반응과 동적 평형</div>
+    <h1 class="serif">멈춘 것처럼 보이는 플라스크</h1>
+    <div class="rxn-hero">
+      <span class="tag-liq">H₂O(l)</span><span class="eqarrow">⇌</span><span class="tag-gas">H₂O(g)</span>
+    </div>
+    <p class="sub">마개로 막은 플라스크 속 물은 왜 더 이상 줄지 않을까요?<br>증발과 응축이 같은 빠르기로 일어나는 순간을 직접 관찰해 봅시다.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <span class="sec-num">01</span>
+    <h2>가역 반응과 동적 평형</h2>
+    <p class="lead">물이 줄지 않는다고 해서 증발이 멈춘 것은 아닙니다.</p>
+    <p>열린 그릇의 물은 모두 증발해 사라지지만, <strong>마개로 막은 플라스크</strong>에서는 물이 어느 정도 증발한 뒤
+      더 이상 줄지 않습니다. 플라스크 안에서는 물이 수증기로 변하는 <strong>증발(정반응)</strong>과,
+      수증기가 다시 물로 돌아오는 <strong>응축(역반응)</strong>이 동시에 일어나기 때문입니다.
+      이처럼 양쪽 방향으로 모두 일어날 수 있는 반응을 <strong>가역 반응</strong>이라고 합니다.</p>
+    <div class="callout">
+      <span class="lbl">핵심</span>
+      증발 속도와 응축 속도가 <strong>같아지면</strong> 물과 수증기의 양이 더 이상 변하지 않습니다.
+      겉보기에는 멈춘 것 같지만 분자들은 계속 드나들고 있는 이 상태를 <strong>동적 평형</strong>이라고 합니다.
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="sec-num">02</span>
+    <h2>두 속도는 무엇으로 정해질까?</h2>
+    <div class="legend">
+      <div class="chip"><span class="swatch" style="background:radial-gradient(circle at 35% 30%,#4f98a8,#1f5460)"></span>액체 속 물 분자</div>
+      <div class="chip"><span class="swatch" style="background:radial-gradient(circle at 35% 30%,#d97a3e,#8a3d12)"></span>수증기(기체) 물 분자</div>
+    </div>
+    <div class="eqbox">\[ \mathrm{H_2O}(l)\ \rightleftharpoons\ \mathrm{H_2O}(g) \]</div>
+    <ul class="clean">
+      <li><strong>증발 속도</strong>는 수면에서 빠져나가는 분자 수입니다. 온도가 같으면 일정하고, 온도가 높을수록 커집니다.</li>
+      <li><strong>응축 속도</strong>는 수면에 부딪혀 다시 붙는 분자 수입니다. 수증기가 많을수록(수증기 압력 \(P\)가 클수록) 커집니다.</li>
+    </ul>
+    <p>처음 진공에서는 수증기가 없어 응축이 일어나지 않습니다. 증발이 계속되면 수증기가 늘어 응축 속도가 점점 커지고,
+      수증기 압력이 그 온도의 <strong>포화 증기압 \(P^\circ\)</strong>에 이르면 두 속도가 같아집니다.</p>
+    <div class="eqbox">\[ \text{동적 평형:}\quad \text{증발 속도} = \text{응축 속도} \quad\Longleftrightarrow\quad P = P^\circ \]</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="sec-num">03</span>
+    <h2>직접 해 보는 동적 평형 시뮬레이션</h2>
+    <p>아래 플라스크에서 물 분자가 <strong>수면을 빠져나가고(증발)</strong> 다시 <strong>붙습니다(응축)</strong>.
+      그래프에서 두 속도가 만나는 순간을 찾아보고, 온도를 바꾸거나 수증기를 많이 넣고 시작해 보세요.</p>
+
+    <div class="sim">
+      <div class="sim-grid">
+        <div class="canvas-card">
+          <div class="state-tag" id="stateTag">증발 중</div>
+          <canvas id="simCanvas" width="440" height="420" aria-label="마개로 막은 둥근 플라스크 속 물 분자의 증발과 응축"></canvas>
+          <div class="count-tag">
+            <span style="color:var(--liq)">액체 분자 <b id="cLiq">260</b>개</span>
+            <span style="color:var(--gas)">수증기 분자 <b id="cGas">0</b>개</span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="rxn-eq">H₂O(l) ⇌ H₂O(g)</div>
+          <div class="ctrl">
+            <label for="temp">온도 <span class="val"><span id="tVal">60</span> °C</span></label>
+            <input type="range" id="temp" min="20" max="90" value="60" step="1">
+            <div class="range-scale"><span>20 °C</span><span>90 °C</span></div>
+          </div>
+          <div class="presets">
+            <button class="pill" data-t="25" type="button">실온 (25 °C)</button>
+            <button class="pill" data-t="60" type="button">따뜻한 물 (60 °C)</button>
+            <button class="pill" data-t="90" type="button">♨️ 뜨거운 물 (90 °C)</button>
+          </div>
+          <div class="status" id="status" role="status">증발 속도 &gt; 응축 속도 → 수증기가 늘어나는 중</div>
+          <div class="readouts">
+            <div class="ro gas"><div class="name">증발 속도 (정반응, 상댓값)</div><div class="num" id="roE">0</div></div>
+            <div class="ro liq"><div class="name">응축 속도 (역반응, 상댓값)</div><div class="num" id="roC">0</div></div>
+            <div class="ro"><div class="name">포화 증기압 P° (CRC)</div><div class="num" id="roP0">0 <small>kPa</small></div></div>
+            <div class="ro"><div class="name">지금 수증기 압력 P</div><div class="num" id="roP">0 <small>kPa</small></div></div>
+            <div class="ro wide"><div class="name">수증기 양 (빈 공간 1 L)</div><div class="num" id="roMol">0</div></div>
+          </div>
+          <div class="btnrow">
+            <button class="btn" id="playBtn" type="button">⏸ 일시정지</button>
+            <button class="btn ghost" id="vacBtn" type="button">↺ 진공에서 시작</button>
+            <button class="btn ghost" id="moreBtn" type="button">수증기 많이 넣고 시작</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="graph-card">
+        <div class="graph-head">
+          <span class="t">시간에 따른 증발·응축 속도 (최근 30초)</span>
+          <span class="glegend">
+            <span style="color:var(--gas)"><i style="background:var(--gas)"></i>증발 속도</span>
+            <span style="color:var(--liq)"><i style="background:var(--liq)"></i>응축 속도</span>
+            <span style="color:var(--gold)"><i class="dash"></i>동적 평형 도달</span>
+          </span>
+        </div>
+        <canvas id="graphCanvas" width="780" height="230" aria-label="시간에 따른 증발 속도와 응축 속도 그래프"></canvas>
+      </div>
+    </div>
+
+    <div class="callout q" style="margin-top:24px">
+      <span class="lbl">관찰 포인트</span>
+      진공에서 시작하면 응축 속도는 0에서 출발해 증발 속도를 따라잡습니다. 반대로 수증기를 많이 넣고 시작하면
+      응축 속도가 더 큰 상태에서 내려와 <strong>같은 평형</strong>에 도달합니다. 평형 상태에서 온도를 올리면 어떻게 될까요?
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="sec-num">04</span>
+    <h2>화면 축척과 가정</h2>
+    <p>수치는 CRC Handbook 95판(2014) 실측값을 바탕으로 했고, 화면에 그대로 그릴 수 없는 부분은 다음과 같이 비율을 적용했습니다.</p>
+    <ul class="clean scale-note" id="scaleNote">
+      <li>평형 수증기 압력 = CRC 물의 포화 증기압 표(6-5)를 ln P 기준으로 보간한 값</li>
+      <li>기체 분자 그림 1개 = 2.0 × 10⁻⁴ mol, 플라스크 빈 공간 1 L 가정 (n = PV/RT) — 예: <span id="noteT">60</span> °C 평형에서 <span id="noteN">36</span>개</li>
+      <li>액체 분자 그림 260개는 축척 없음: 실제로는 액체(예: 물 100 mL = 5.6 mol)가 수증기보다 수백~수천 배 많아 수면이 거의 내려가지 않음</li>
+      <li>증발·응축 속도: 분자 운동론에 따라 (압력 ÷ √T)에 비례하게 계산하고, 25 °C 포화 상태의 증발 속도를 1로 둔 상댓값</li>
+      <li>평형에 도달하는 빠르기(가로축 시간)는 화면용 — 실제 시간과 무관</li>
+      <li>기체 분자 그림 속력 ∝ √T (25 °C = 200 px/초), 분자 크기는 실제와 무관</li>
+      <li>평형 판정: 두 속도 차이가 2 % 미만으로 1초 동안 유지될 때</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="sec-num">05</span>
+    <h2>정리</h2>
+    <ul class="clean">
+      <li>증발과 응축처럼 양쪽 방향으로 일어날 수 있는 반응을 <strong>가역 반응</strong>이라고 한다.</li>
+      <li>정반응(증발) 속도와 역반응(응축) 속도가 <strong>같아진</strong> 상태가 <strong>동적 평형</strong>이다.</li>
+      <li>동적 평형에서는 겉보기 변화가 없지만, 분자 수준에서는 증발과 응축이 <strong>계속</strong> 일어난다.</li>
+      <li>평형에서의 수증기 압력은 그 온도의 <strong>포화 증기압</strong>이며, 어느 쪽에서 출발해도 같은 평형에 도달한다.</li>
+    </ul>
+    <a class="next-card" href="index.html">
+      <span class="lbl">다음 실험 →</span>
+      <span class="ttl">갈색 평형 실험실: 2NO₂ ⇌ N₂O₄</span>
+      <p style="margin:4px 0 0">온도와 부피를 바꾸면 평형이 어느 쪽으로 이동하는지 기체의 색으로 확인해 봅시다.</p>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="eq-mini">H₂O(l) ⇌ H₂O(g)</span> · 가역 반응과 동적 평형 학습 자료<br>
+    데이터: CRC Handbook of Chemistry and Physics, 95th ed. (2014)
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   가역 반응과 동적 평형 — 밀폐 용기 속 물의 증발과 응축
+   H₂O(l) ⇌ H₂O(g)
+   - 증발 속도(정반응)는 온도로만 정해지고 (포화 증기압 P° 에 비례),
+     응축 속도(역반응)는 지금 수증기 압력 P 에 비례.
+     (분자 운동론: 수면을 드나드는 분자 수 ∝ 압력 ÷ √T)
+   - 그래서 P 가 CRC 포화 증기압 P° 에 도달하면 두 속도가 같아져 동적 평형.
+   - 그래프는 '25 °C 증발 속도 = 1' 인 상댓값으로 그림.
+   ========================================================= */
+(function(){
+  // ── CRC 95판 실측값
+  const R = 8.3144621; // 기체 상수 (J/mol·K) (1-2)
+  // 물의 포화 증기압 [온도 °C, 압력 kPa] (6-5)
+  const WATER_VP = [
+    [0.01, 0.61165], [10, 1.2282], [20, 2.3393], [25, 3.1699], [30, 4.2470], [40, 7.3849],
+    [50, 12.352], [60, 19.946], [70, 31.201], [80, 47.414], [90, 70.182], [100, 101.42],
+    [110, 143.38], [120, 198.67],
+  ];
+
+  // 표에서 사이 값을 직선으로 이어 찾기 (선형 보간)
+  function interp(table, x){
+    if (x <= table[0][0]) return table[0][1];
+    for (let i = 1; i < table.length; i++){
+      const [x1, y1] = table[i], [x0, y0] = table[i - 1];
+      if (x <= x1) return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+    }
+    return table[table.length - 1][1];
+  }
+  // 아주 크거나 작은 수를 "2.00 × 10⁻³" 꼴로 보여 주기
+  const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+  function sci(x, digits){
+    if (x === 0) return '0';
+    let e = Math.floor(Math.log10(Math.abs(x)));
+    if (Math.abs(x / 10 ** e).toFixed(digits) >= 10) e += 1;
+    if (e >= -2 && e <= 3) return x.toFixed(Math.max(0, digits - e));
+    const m = x / 10 ** e;
+    return m.toFixed(digits) + ' × 10' + String(e).split('').map((c) => SUP[c]).join('');
+  }
+
+  // ── 실제 데이터와 연결되는 값
+  const LN_WATER_VP = WATER_VP.map(([t, p]) => [t, Math.log(p)]);
+  const pVap = (t) => Math.exp(interp(LN_WATER_VP, t)); // 물의 포화 증기압 (kPa), CRC 표를 ln P 로 보간
+  const V_GAS = 1;        // 플라스크 안 빈 공간(기체가 차지하는 부피) = 1 L 로 가정
+  const MOL_PER_GAS = 2e-4; // 기체 분자 그림 1개 = 2×10⁻⁴ mol
+  const M_WATER = 18.015; // 물의 몰질량 (g/mol)
+  const toK = (t) => t + 273.15;
+  // 수증기 압력 P (kPa) → 기체 분자 그림 개수 (n = PV/RT, kPa·L = J)
+  const gasCountOf = (P, t) => (P * V_GAS) / (R * toK(t)) / MOL_PER_GAS;
+  const pressureOf = (n, t) => (n * MOL_PER_GAS * R * toK(t)) / V_GAS;
+  // 수면을 드나드는 속도 ∝ P ÷ √T, 25 °C 포화 증기압일 때를 1 로 맞춘 상댓값
+  const REL0 = pVap(25) / Math.sqrt(toK(25));
+  const relRate = (P, t) => P / Math.sqrt(toK(t)) / REL0;
+
+  // ── 화면용 값 (실제 속도와 무관)
+  const K0 = 0.2;          // 평형에 다가가는 빠르기 (1/초, 25 °C 기준)
+  const kOf = (t) => K0 * Math.sqrt(toK(t) / toK(25)); // 수면을 드나드는 빠르기 ∝ √T
+  const GAS_SPEED = 200;   // 25 °C 기체 분자 그림 속력 (px/초), 실제처럼 √T 에 비례
+  const LIQ_SPEED = 30;    // 액체 분자의 흔들림 속력 (px/초)
+  const N_TOTAL = 260;     // 전체 물 분자 그림 수
+  const WINDOW = 30;       // 그래프에 보이는 시간 폭 (초)
+
+  // ── 플라스크 그림 (화면 좌표, 픽셀)
+  const W = 440, H = 420;
+  const cx = W / 2, cy = 258, RAD = 148; // 둥근 플라스크 중심과 반지름
+  const SURFACE0 = cy + 40;              // 분자가 모두 액체일 때 수면 높이
+  const NECK_TOP = 62, NECK_HALF = 32;   // 플라스크 목
+  const MR = 3.6;                        // 산소 원자 그림 반지름
+  const COLL_D = 8.4, COLL_D2 = COLL_D * COLL_D; // 분자끼리 부딪히는 거리
+  // 플라스크 속 분자 색 (플라스크 배경은 어두운 화면에서도 밝은 색이라 고정)
+  const COL_LIQ = '#2e6f7e', COL_GAS = '#b3541e';
+
+  // 액체 부분(원의 아랫부분) 넓이: 수면이 중심에서 s 만큼 아래일 때
+  function segArea(s){
+    return RAD * RAD * (Math.PI / 2) - s * Math.sqrt(RAD * RAD - s * s) - RAD * RAD * Math.asin(Math.max(-1, Math.min(1, s / RAD)));
+  }
+  const AREA_FULL = segArea(SURFACE0 - cy);
+  // 액체 분자 수에 맞는 수면 높이 (넓이가 분자 수에 비례하도록 반씩 좁혀 가며 찾기)
+  function surfaceFor(liq){
+    const target = AREA_FULL * (liq / N_TOTAL);
+    let lo = -RAD, hi = RAD;
+    for (let k = 0; k < 26; k++){ const mid = (lo + hi) / 2; if (segArea(mid) > target) lo = mid; else hi = mid; }
+    return cy + (lo + hi) / 2;
+  }
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+
+  // 처음 상태 만들기. vapor = 시작할 때 들어 있는 기체 분자 수
+  function makeState(vapor, t){
+    const nGas = Math.round(vapor);
+    const surfaceY = surfaceFor(N_TOTAL - nGas);
+    const mols = [];
+    for (let i = 0; i < N_TOTAL; i++){
+      const gas = i < nGas;
+      let x, y;
+      for (let k = 0; k < 200; k++){ // 액체면 수면 아래, 기체면 수면 위의 아무 곳
+        x = cx + rand(-1, 1) * (RAD - 8);
+        y = gas ? rand(cy - RAD + 8, surfaceY - 4) : rand(surfaceY + 2, cy + RAD - 6);
+        if ((x - cx) ** 2 + (y - cy) ** 2 <= (RAD - 8) ** 2) break;
+      }
+      const sp = gas ? GAS_SPEED * Math.sqrt(toK(t) / toK(25)) : LIQ_SPEED;
+      const a = rand(0, Math.PI * 2);
+      mols.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, gas, angle: rand(0, 6.28), spin: rand(-3, 3) });
+    }
+    return { mols, surfaceY, n: vapor, time: 0, hist: [], lastRec: -1, eqTime: null, hold: 0, hitRate: 0.4 };
+  }
+
+  let temp = 60;      // 온도 (°C)
+  let running = true; // 재생 중인지
+  let s = makeState(0, temp);
+
+  // ----- 한 장면만큼 시간 진행
+  function step(dt){
+    const k = kOf(temp);
+    const nEq = gasCountOf(pVap(temp), temp); // 평형일 때 기체 분자 수 (CRC 포화 증기압으로 계산)
+
+    // (1) 거시적 변화: dn/dt = k·(n평형 − n)  ⇔  증발 속도 − 응축 속도
+    s.n = nEq + (s.n - nEq) * Math.exp(-k * dt);
+    s.time += dt;
+
+    // (2) 수면 높이: 액체 분자 수에 맞게 천천히 움직임
+    let liq = 0;
+    for (const m of s.mols) if (!m.gas) liq++;
+    s.surfaceY += (surfaceFor(liq) - s.surfaceY) * Math.min(1, dt * 4);
+    const sy = s.surfaceY;
+
+    // 기체 분자 속력을 온도에 맞춤 (실제처럼 속력 ∝ √T)
+    const vT = GAS_SPEED * Math.sqrt(toK(temp) / toK(25));
+    let vSum = 0, gasN = 0;
+    for (const m of s.mols) if (m.gas){ vSum += Math.hypot(m.vx, m.vy); gasN++; }
+    const fix = gasN ? 1 + (vT / (vSum / gasN) - 1) * Math.min(1, dt * 3) : 1;
+
+    // 수면에 부딪힌 기체 분자가 액체로 붙을 확률 (거시적 응축 속도와 맞도록 조정)
+    const stick = Math.min(1, k / Math.max(1e-3, s.hitRate));
+    let hits = 0;
+
+    // (3) 분자 이동 + 응축
+    for (const m of s.mols){
+      m.angle += m.spin * dt;
+      if (m.gas){ m.vx *= fix; m.vy *= fix; }
+      m.x += m.vx * dt; m.y += m.vy * dt;
+      if (m.gas){
+        if (m.y >= sy - 1){
+          hits++;
+          if (Math.random() < stick){ // 응축: 액체가 됨
+            m.gas = false;
+            m.y = sy + rand(2, 6);
+            const a = rand(0, Math.PI * 2);
+            m.vx = Math.cos(a) * LIQ_SPEED; m.vy = Math.abs(Math.sin(a)) * LIQ_SPEED;
+            m.spin = rand(-2, 2);
+          } else { // 튕겨 나감
+            m.y = sy - 2; m.vy = -Math.abs(m.vy);
+          }
+        }
+      } else if (m.y < sy + 1){ m.y = sy + 1; m.vy = Math.abs(m.vy); }
+      // 플라스크 벽에서 튕김
+      const dx = m.x - cx, dy = m.y - cy, d = Math.hypot(dx, dy), lim = RAD - (m.gas ? MR : 4);
+      if (d > lim){
+        const nx = dx / d, ny = dy / d, dot = m.vx * nx + m.vy * ny;
+        if (dot > 0){ m.vx -= 2 * dot * nx; m.vy -= 2 * dot * ny; }
+        m.x = cx + nx * lim; m.y = cy + ny * lim;
+        if (m.gas && m.y > sy - 2) m.y = sy - 2;
+        if (!m.gas && m.y < sy + 1) m.y = sy + 1;
+      }
+    }
+    // 기체 분자 1개가 1초에 수면에 부딪히는 횟수 (2초 평균)
+    if (gasN > 0) s.hitRate += (hits / (gasN * dt) - s.hitRate) * Math.min(1, dt / 2);
+
+    // (4) 증발: 기체 분자 그림 수가 거시적 값 n 을 따라가도록 수면 근처 분자를 띄움
+    //     평형에서는 방금 응축한 수만큼 다시 증발 → 증발 = 응축
+    let gasNow = 0;
+    for (const m of s.mols) if (m.gas) gasNow++;
+    let need = Math.round(s.n) - gasNow;
+    while (need > 0){
+      let best = null;
+      for (let t = 0; t < 24; t++){
+        const m = s.mols[(Math.random() * s.mols.length) | 0];
+        if (!m.gas && (!best || m.y < best.y)) best = m;
+      }
+      if (!best) break;
+      best.gas = true;
+      best.y = sy - 2;
+      const a = -Math.PI / 2 + rand(-0.9, 0.9);
+      best.vx = Math.cos(a) * vT; best.vy = Math.sin(a) * vT;
+      best.spin = rand(-7, 7);
+      need--;
+    }
+
+    // (5) 분자끼리 부딪힘 (기체끼리, 액체끼리)
+    const gas = [], liquid = [];
+    for (const m of s.mols) (m.gas ? gas : liquid).push(m);
+    collide(gas, true, sy); collide(liquid, false, sy);
+
+    // (6) 속도 기록과 평형 판정
+    const e = relRate(pVap(temp), temp);
+    const c = relRate(pressureOf(s.n, temp), temp);
+    const diff = Math.abs(e - c) / e;
+    if (diff < 0.02){
+      s.hold += dt;
+      if (s.hold > 1 && s.eqTime == null) s.eqTime = s.time; // 1초 동안 거의 같으면 평형
+    } else if (diff > 0.05){ s.hold = 0; s.eqTime = null; }
+    if (s.time - s.lastRec >= 0.1){
+      s.lastRec = s.time;
+      s.hist.push([s.time, e, c]);
+      while (s.hist.length && s.hist[0][0] < s.time - WINDOW) s.hist.shift();
+    }
+  }
+
+  // 가까이 붙은 두 분자를 서로 튕겨 냄
+  function collide(arr, isGas, sy){
+    for (let i = 0; i < arr.length; i++){
+      const a = arr[i];
+      for (let j = i + 1; j < arr.length; j++){
+        const b = arr[j];
+        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        if (d2 >= COLL_D2 || d2 === 0) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        const vrel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+        if (vrel > 0){ a.vx -= vrel * nx; a.vy -= vrel * ny; b.vx += vrel * nx; b.vy += vrel * ny; } // 속도 맞바꿈
+        const o = (COLL_D - d) / 2; // 겹친 만큼 떼어 놓기
+        a.x -= nx * o; a.y -= ny * o; b.x += nx * o; b.y += ny * o;
+        for (const m of [a, b]){ if (isGas) m.y = Math.min(m.y, sy - 2); else m.y = Math.max(m.y, sy + 1); }
+      }
+    }
+  }
+
+  // ----- 캔버스 준비: 화면이 선명하도록 기기 픽셀 비율(dpr)만큼 크게 그림
+  const sim = document.getElementById('simCanvas'), sctx = sim.getContext('2d');
+  const gph = document.getElementById('graphCanvas'), gctx = gph.getContext('2d');
+  let GW = 780, GH = 230; // 그래프 크기: 화면 폭에 맞춰 다시 정함 (글자가 너무 작아지지 않도록)
+  function setup(canvas, ctx, w, h){
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function fitGraph(){
+    GW = Math.max(300, Math.round(gph.clientWidth || 780));
+    GH = GW < 560 ? 220 : 230;
+    gph.style.height = GH + 'px';
+    setup(gph, gctx, GW, GH);
+  }
+  setup(sim, sctx, W, H); fitGraph();
+  window.addEventListener('resize', fitGraph);
+
+  // ----- 플라스크 그리기
+  function drawSim(){
+    const ctx = sctx;
+    ctx.clearRect(0, 0, W, H);
+    // 플라스크 안쪽
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, RAD, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = '#fbf8f1'; ctx.fillRect(cx - RAD, cy - RAD, RAD * 2, RAD * 2);
+    // 액체 물 부분을 옅은 청록색으로 칠하고 수면에 선을 그음
+    ctx.fillStyle = 'rgba(46,111,126,0.16)'; ctx.fillRect(cx - RAD, s.surfaceY, RAD * 2, cy + RAD - s.surfaceY);
+    ctx.strokeStyle = 'rgba(46,111,126,0.6)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - RAD, s.surfaceY); ctx.lineTo(cx + RAD, s.surfaceY); ctx.stroke();
+    for (const m of s.mols) drawWater(ctx, m);
+    ctx.restore();
+    // 플라스크 목, 몸통, 마개
+    const neckBottom = cy - Math.sqrt(RAD * RAD - NECK_HALF * NECK_HALF);
+    ctx.fillStyle = '#fbf8f1'; ctx.fillRect(cx - NECK_HALF, NECK_TOP, NECK_HALF * 2, neckBottom - NECK_TOP + 2);
+    ctx.strokeStyle = '#3c3228'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - NECK_HALF, NECK_TOP); ctx.lineTo(cx - NECK_HALF, neckBottom);
+    ctx.moveTo(cx + NECK_HALF, NECK_TOP); ctx.lineTo(cx + NECK_HALF, neckBottom);
+    ctx.stroke();
+    const gap = Math.asin(NECK_HALF / RAD);
+    ctx.beginPath(); ctx.arc(cx, cy, RAD, -Math.PI / 2 + gap, -Math.PI / 2 - gap + Math.PI * 2); ctx.stroke();
+    // 마개 (코르크색)
+    ctx.fillStyle = '#a07a4a'; ctx.fillRect(cx - NECK_HALF - 6, NECK_TOP - 22, (NECK_HALF + 6) * 2, 24);
+    ctx.strokeStyle = '#6e5230'; ctx.lineWidth = 1.5; ctx.strokeRect(cx - NECK_HALF - 6, NECK_TOP - 22, (NECK_HALF + 6) * 2, 24);
+    ctx.fillStyle = '#3c3228'; ctx.font = '600 12px "Noto Sans KR", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('마개 (밀폐)', cx, NECK_TOP - 30);
+  }
+
+  // 물 분자: 산소(색 공) + 수소 2개(흰 공)
+  function drawWater(ctx, m){
+    const col = m.gas ? COL_GAS : COL_LIQ;
+    for (const a of [-0.92, 0.92]){
+      ctx.beginPath(); ctx.arc(m.x + Math.cos(m.angle + a) * MR * 1.25, m.y + Math.sin(m.angle + a) * MR * 1.25, MR * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(m.x, m.y, MR, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+  }
+
+  // ----- 그래프 그리기 (색은 페이지 색 이름표에서 읽어 와 어두운 화면에서도 잘 보이게)
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function drawGraph(){
+    const c = gctx;
+    c.clearRect(0, 0, GW, GH);
+    const padL = 40, padR = 12, padT = 12, padB = 34, w = GW - padL - padR, h = GH - padT - padB;
+    const t1 = Math.max(WINDOW, s.time), t0 = t1 - WINDOW;
+    const eNow = relRate(pVap(temp), temp);
+    let yMax = eNow;
+    for (const p of s.hist) yMax = Math.max(yMax, p[1], p[2]);
+    let yTop = Math.max(2, Math.ceil(yMax * 1.25));
+    if (yTop > 4) yTop = Math.ceil(yTop / 4) * 4; // 눈금이 4, 8, 12 … 처럼 깔끔한 수가 되도록
+    const X = (t) => padL + ((t - t0) / WINDOW) * w;
+    const Y = (v) => padT + h - (v / yTop) * h;
+
+    // 눈금과 축
+    c.font = '11px "Noto Sans KR",sans-serif'; c.fillStyle = css('--axis-text'); c.lineWidth = 1;
+    c.textAlign = 'right';
+    for (let i = 0; i <= 4; i++){
+      const v = (yTop / 4) * i, y = Y(v);
+      c.strokeStyle = css('--grid'); c.globalAlpha = i ? 0.6 : 1;
+      c.beginPath(); c.moveTo(padL, y); c.lineTo(padL + w, y); c.stroke();
+      c.globalAlpha = 1;
+      c.fillText(+v.toFixed(1), padL - 6, y + 4);
+    }
+    c.textAlign = 'center';
+    for (let i = 0; i <= 6; i++){
+      const t = t0 + (WINDOW / 6) * i;
+      c.fillText(Math.round(t), X(t), padT + h + 15);
+    }
+    c.fillText('시간 (화면 초)', padL + w / 2, GH - 3);
+    c.save(); c.translate(11, padT + h / 2); c.rotate(-Math.PI / 2); c.fillText('반응 속도 (상댓값)', 0, 0); c.restore();
+    c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(padL, padT); c.lineTo(padL, padT + h); c.stroke();
+
+    // 동적 평형에 도달한 시점 (점선)
+    if (s.eqTime != null && s.eqTime >= t0){
+      const x = X(s.eqTime);
+      c.save(); c.setLineDash([5, 4]); c.strokeStyle = css('--gold'); c.lineWidth = 1.6;
+      c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + h); c.stroke(); c.restore();
+      c.fillStyle = css('--gold'); c.font = '700 11px "Noto Sans KR",sans-serif';
+      c.textAlign = x > padL + w - 70 ? 'right' : 'left';
+      c.fillText('동적 평형', x + (c.textAlign === 'right' ? -5 : 5), padT + 12);
+    }
+
+    // 두 속도 선
+    if (s.hist.length < 2) return;
+    const line = (idx, color) => {
+      c.strokeStyle = color; c.lineWidth = 2.4; c.lineJoin = 'round'; c.beginPath();
+      s.hist.forEach((p, i) => { const x = X(p[0]), y = Y(p[idx]); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+      c.stroke();
+    };
+    line(2, css('--liq')); line(1, css('--gas'));
+  }
+
+  // ----- 숫자 표시판 갱신
+  const $ = (id) => document.getElementById(id);
+  function updateReadouts(){
+    let gasCount = 0;
+    for (const m of s.mols) if (m.gas) gasCount++;
+    const P0 = pVap(temp), P = pressureOf(s.n, temp);
+    const eNow = relRate(P0, temp), cNow = relRate(P, temp);
+    const molGas = s.n * MOL_PER_GAS;
+    $('cLiq').textContent = N_TOTAL - gasCount;
+    $('cGas').textContent = gasCount;
+    $('roE').textContent = eNow.toFixed(2);
+    $('roC').textContent = cNow.toFixed(2);
+    $('roP0').innerHTML = P0.toFixed(2) + ' <small>kPa</small>';
+    $('roP').innerHTML = P.toFixed(2) + ' <small>kPa</small>';
+    $('roMol').innerHTML = sci(molGas, 2) + ' <small>mol</small> (' + (molGas * M_WATER * 1000).toFixed(0) + ' <small>mg</small>)';
+
+    const isEq = s.eqTime != null, st = $('status'), tag = $('stateTag');
+    st.classList.toggle('eq', isEq);
+    if (isEq){
+      st.textContent = '동적 평형: 증발 속도 = 응축 속도. 겉보기 변화는 없지만 증발과 응축은 계속 일어납니다.';
+      tag.textContent = '동적 평형'; tag.style.color = css('--gold');
+    } else if (P < P0){
+      st.textContent = '증발 속도 > 응축 속도 → 수증기가 늘어나는 중';
+      tag.textContent = '증발 우세'; tag.style.color = css('--gas');
+    } else {
+      st.textContent = '응축 속도 > 증발 속도 → 수증기가 줄어드는 중';
+      tag.textContent = '응축 우세'; tag.style.color = css('--liq');
+    }
+  }
+  function updateNote(){
+    $('noteT').textContent = temp;
+    $('noteN').textContent = gasCountOf(pVap(temp), temp).toFixed(0);
+  }
+
+  // ----- 반복 실행 (1초에 약 60번)
+  let last = performance.now(), lastView = -1;
+  function loop(now){
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (running){
+      // 한 번에 너무 크게 움직이지 않도록 잘게 나눠 계산
+      const n = Math.ceil(dt / 0.02);
+      for (let i = 0; i < n; i++) step(dt / n);
+    }
+    drawSim(); drawGraph();
+    if (s.time - lastView > 0.1 || s.time < lastView){ lastView = s.time; updateReadouts(); }
+    requestAnimationFrame(loop);
+  }
+
+  // ----- 버튼과 슬라이더
+  const tEl = $('temp'), playBtn = $('playBtn');
+  function setTemp(t){ temp = t; tEl.value = t; $('tVal').textContent = t; updateNote(); updateReadouts(); }
+  tEl.addEventListener('input', () => setTemp(+tEl.value));
+  document.querySelectorAll('.pill').forEach((b) => b.addEventListener('click', () => setTemp(+b.dataset.t)));
+  playBtn.addEventListener('click', () => { running = !running; playBtn.textContent = running ? '⏸ 일시정지' : '▶ 재생'; });
+  function restart(vapor){
+    s = makeState(vapor, temp); lastView = -1;
+    running = true; playBtn.textContent = '⏸ 일시정지';
+    updateReadouts();
+  }
+  $('vacBtn').addEventListener('click', () => restart(0));
+  // 평형의 2배만큼 수증기를 넣고 시작 → 반대 방향에서 같은 평형에 도달
+  $('moreBtn').addEventListener('click', () => restart(Math.min(2 * gasCountOf(pVap(temp), temp), N_TOTAL - 110)));
+
+  updateNote(); updateReadouts(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
